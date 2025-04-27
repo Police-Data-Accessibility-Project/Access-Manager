@@ -1,6 +1,7 @@
 from enum import Enum
 from http import HTTPStatus
 from typing import Optional
+from boltons import urlutils
 
 from aiohttp import ClientSession, ClientResponseError
 from pydantic import BaseModel
@@ -42,7 +43,7 @@ class RequestInfo(BaseModel):
 
     def kwargs(self) -> dict:
         d = {
-            "url": self.url,
+            "url": self.url_with_query_params(),
         }
         if self.json is not None:
             d['json'] = self.json
@@ -53,11 +54,11 @@ class RequestInfo(BaseModel):
         return d
 
     def url_with_query_params(self) -> str:
-        url = self.url
-        if self.params is not None:
-
-
-        return url
+        if self.params is None:
+            return self.url
+        url = urlutils.URL(self.url)
+        url.query_params.update(self.params)
+        return url.to_text()
 
 
 DEFAULT_PDAP_API_URL = "https://data-sources.pdap.io/api"
