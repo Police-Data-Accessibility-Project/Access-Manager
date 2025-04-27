@@ -52,6 +52,12 @@ class RequestInfo(BaseModel):
             d['timeout'] = self.timeout
         return d
 
+    def url_with_query_params(self) -> str:
+        url = self.url
+        if self.params is not None:
+
+
+        return url
 
 
 DEFAULT_PDAP_API_URL = "https://data-sources.pdap.io/api"
