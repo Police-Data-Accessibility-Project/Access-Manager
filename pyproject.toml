@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pdap-access-manager"
-version = "0.1.4"
+version = "0.1.6"
 description = "Access Manager for accessing PDAP API"
 readme = "README.md"
 authors = ["Max Chis <maxachis@gmail.com>"]
