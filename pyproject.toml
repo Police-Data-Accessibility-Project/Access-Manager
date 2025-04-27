@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "pdap-access-manager"
+version = "0.1.4"
+description = "Access Manager for accessing PDAP API"
+readme = "README.md"
+authors = ["Max Chis <maxachis@gmail.com>"]
+license = "MIT"
+packages = [{ include = "pdap_access_manager" }]
+homepage = "https://github.com/Police-Data-Accessibility-Project/Access-Manager"
+repository = "https://github.com/Police-Data-Accessibility-Project/Access-Manager"
+documentation = "https://github.com/Police-Data-Accessibility-Project/Access-Manager"
+keywords = []
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+[tool.poetry.dependencies]
+python = ">=3.12"
+aiohttp = "3.11.18"
+requests = "2.32.3"
+pydantic = "2.11.3"
+
+[tool.poetry.group.dev.dependencies]
+# (add test tools like pytest here if you want)
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.urls]
+"Issues" = "https://github.com/Police-Data-Accessibility-Project/Access-Manager/issues"
