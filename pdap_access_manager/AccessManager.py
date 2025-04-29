@@ -23,6 +23,7 @@ request_methods = {
 class Namespaces(Enum):
     AUTH = "auth"
     LOCATIONS = "locations"
+    PERMISSIONS = "permissions"
 
 
 class CustomHTTPException(Exception):
@@ -60,6 +61,10 @@ class RequestInfo(BaseModel):
         url.query_params.update(self.params)
         return url.to_text()
 
+def authorization_from_token(token: str) -> dict:
+    return {
+        "Authorization": f"Bearer {token}"
+    }
 
 DEFAULT_PDAP_API_URL = "https://data-sources.pdap.io/api"
 
@@ -147,12 +152,10 @@ class AccessManager:
             namespace=Namespaces.AUTH,
             subdomains=["refresh-session"],
         )
-        refresh_token = await self.refresh_token
         rqi = RequestInfo(
             type_=RequestType.POST,
             url=url,
-            json_={"refresh_token": refresh_token},
-            headers=await self.jwt_header()
+            headers=await self.refresh_jwt_header()
         )
         rsi = await self.make_request(rqi, allow_retry=False)
         data = rsi.data
@@ -176,6 +179,7 @@ class AccessManager:
                 )
         except ClientResponseError as e:
             if e.status == 401 and allow_retry:  # Unauthorized, token expired?
+                print("401 error, refreshing access token...")
                 await self.refresh_access_token()
                 return await self.make_request(ri, allow_retry=False)
             else:
@@ -213,9 +217,15 @@ class AccessManager:
         Returns: Dictionary of Bearer Authorization with JWT key
         """
         access_token = await self.access_token
-        return {
-            "Authorization": f"Bearer {access_token}"
-        }
+        return authorization_from_token(access_token)
+
+    async def refresh_jwt_header(self) -> dict:
+        """
+        Retrieve JWT header
+        Returns: Dictionary of Bearer Authorization with JWT key
+        """
+        refresh_token = await self.refresh_token
+        return authorization_from_token(refresh_token)
 
     async def api_key_header(self) -> dict:
         """

@@ -1,0 +1,1 @@
+These tests are designed to be run manually against the API.
