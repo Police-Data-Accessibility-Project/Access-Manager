@@ -106,5 +106,3 @@ async def test_access_manager_refresh_access_token_failure_no_retry(access_manag
         await access_manager.refresh_access_token()
 
     post_response.raise_for_status.assert_called_once()
-
-
