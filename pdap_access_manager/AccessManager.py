@@ -36,7 +36,7 @@ class ResponseInfo(BaseModel):
 class RequestInfo(BaseModel):
     type_: RequestType
     url: str
-    json: Optional[dict] = None
+    json_: Optional[dict] = None
     headers: Optional[dict] = None
     params: Optional[dict] = None
     timeout: Optional[int] = 10
@@ -45,8 +45,8 @@ class RequestInfo(BaseModel):
         d = {
             "url": self.url_with_query_params(),
         }
-        if self.json is not None:
-            d['json'] = self.json
+        if self.json_ is not None:
+            d['json'] = self.json_
         if self.headers is not None:
             d['headers'] = self.headers
         if self.timeout is not None:
@@ -151,15 +151,15 @@ class AccessManager:
         rqi = RequestInfo(
             type_=RequestType.POST,
             url=url,
-            json={"refresh_token": refresh_token},
+            json_={"refresh_token": refresh_token},
             headers=await self.jwt_header()
         )
-        rsi = await self.make_request(rqi)
+        rsi = await self.make_request(rqi, allow_retry=False)
         data = rsi.data
         self._access_token = data['access_token']
         self._refresh_token = data['refresh_token']
 
-    async def make_request(self, ri: RequestInfo) -> ResponseInfo:
+    async def make_request(self, ri: RequestInfo, allow_retry: bool = True) -> ResponseInfo:
         """
         Make request to PDAP
         :param ri:
@@ -175,9 +175,9 @@ class AccessManager:
                     data=json
                 )
         except ClientResponseError as e:
-            if e.status == 401:  # Unauthorized, token expired?
+            if e.status == 401 and allow_retry:  # Unauthorized, token expired?
                 await self.refresh_access_token()
-                return await self.make_request(ri)
+                return await self.make_request(ri, allow_retry=False)
             else:
                 raise CustomHTTPException(f"Error making {ri.type_} request to {ri.url}: {str(e)}")
 
@@ -196,7 +196,7 @@ class AccessManager:
         request_info = RequestInfo(
             type_=RequestType.POST,
             url=url,
-            json={
+            json_={
                 "email": email,
                 "password": password
             }
