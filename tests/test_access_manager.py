@@ -49,6 +49,7 @@ async def test_access_manager_happy_path(access_manager):
 
 async def test_access_manager_refresh_on_401(access_manager):
     access_manager.refresh_access_token = AsyncMock()
+    access_manager.jwt_header = AsyncMock(return_value={"Authorization": "Bearer token"})
 
     # First response raises 401
     first_get_response = MagicMock(name="first_get_response")

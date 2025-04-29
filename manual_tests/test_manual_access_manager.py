@@ -15,9 +15,13 @@ async def test_access_manager_refresh_access_token():
             session=session,
         )
         url = access_manager.build_url(
-            namespace=Namespaces.PERMISSIONS,
+            namespace=Namespaces.SEARCH,
+            subdomains=['follow']
         )
-        jwt_header_pre_refresh = await access_manager.jwt_header()
-        await access_manager.refresh_access_token()
-        jwt_header_post_refresh = await access_manager.jwt_header()
-        assert jwt_header_pre_refresh != jwt_header_post_refresh
+        request_info = RequestInfo(
+            type_=RequestType.GET,
+            url=url,
+            headers={"Authorization": "Bearer FalseAuth"}
+        )
+        response_info = await access_manager.make_request(request_info)
+        assert response_info.status_code == 200

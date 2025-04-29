@@ -24,6 +24,7 @@ class Namespaces(Enum):
     AUTH = "auth"
     LOCATIONS = "locations"
     PERMISSIONS = "permissions"
+    SEARCH = "search"
 
 
 class CustomHTTPException(Exception):
@@ -181,6 +182,7 @@ class AccessManager:
             if e.status == 401 and allow_retry:  # Unauthorized, token expired?
                 print("401 error, refreshing access token...")
                 await self.refresh_access_token()
+                ri.headers = await self.jwt_header()
                 return await self.make_request(ri, allow_retry=False)
             else:
                 raise CustomHTTPException(f"Error making {ri.type_} request to {ri.url}: {str(e)}")
