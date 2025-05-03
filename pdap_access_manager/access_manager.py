@@ -25,6 +25,7 @@ class Namespaces(Enum):
     LOCATIONS = "locations"
     PERMISSIONS = "permissions"
     SEARCH = "search"
+    COLLECTORS = "collector"
 
 
 class CustomHTTPException(Exception):
