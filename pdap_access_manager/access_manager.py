@@ -91,11 +91,17 @@ class AccessManager:
         self.api_url = api_url
 
     async def __aenter__(self):
+        """
+        Create session if not already set
+        """
         if self.session is None:
             self.session = ClientSession()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """
+        Close session
+        """
         if self._external_session is None and self.session is not None:
             await self.session.close()
 
