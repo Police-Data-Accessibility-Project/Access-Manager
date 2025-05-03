@@ -82,12 +82,22 @@ class AccessManager:
             api_url: str = DEFAULT_PDAP_API_URL,
     ):
         self.session = session
+        self._external_session = session
         self._access_token = None
         self._refresh_token = None
         self.api_key = api_key
         self.email = email
         self.password = password
         self.api_url = api_url
+
+    async def __aenter__(self):
+        if self.session is None:
+            self.session = ClientSession()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if self._external_session is None and self.session is not None:
+            await self.session.close()
 
     def build_url(self, namespace: Namespaces, subdomains: Optional[list[str]] = None) -> str:
         """
