@@ -1,7 +1,7 @@
 from aiohttp import ClientSession
 from environs import Env
 
-from pdap_access_manager.access_manager import AccessManager, RequestInfo, RequestType, Namespaces
+from pdap_access_manager.access_manager import AccessManager, RequestInfo, RequestType, DataSourcesNamespaces
 
 
 async def test_access_manager_refresh_access_token():
@@ -15,7 +15,7 @@ async def test_access_manager_refresh_access_token():
             session=session,
         )
         url = access_manager.build_url(
-            namespace=Namespaces.SEARCH,
+            namespace=DataSourcesNamespaces.SEARCH,
             subdomains=['follow']
         )
         request_info = RequestInfo(

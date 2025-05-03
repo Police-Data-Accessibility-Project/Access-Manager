@@ -20,11 +20,13 @@ request_methods = {
     RequestType.DELETE: ClientSession.delete,
 }
 
-class Namespaces(Enum):
+class DataSourcesNamespaces(Enum):
     AUTH = "auth"
     LOCATIONS = "locations"
     PERMISSIONS = "permissions"
     SEARCH = "search"
+
+class SourceCollectorNamespaces(Enum):
     COLLECTORS = "collector"
 
 
@@ -68,7 +70,8 @@ def authorization_from_token(token: str) -> dict:
         "Authorization": f"Bearer {token}"
     }
 
-DEFAULT_PDAP_API_URL = "https://data-sources.pdap.io/api"
+DEFAULT_DATA_SOURCES_URL = "https://data-sources.pdap.io/api"
+DEFAULT_SOURCE_COLLECTOR_URL = "https://source-collector.pdap.io/api"
 
 class AccessManager:
     """
@@ -80,7 +83,8 @@ class AccessManager:
             password: str,
             session: Optional[ClientSession] = None,
             api_key: Optional[str] = None,
-            api_url: str = DEFAULT_PDAP_API_URL,
+            data_sources_url: str = DEFAULT_DATA_SOURCES_URL,
+            source_collector_url: str = DEFAULT_SOURCE_COLLECTOR_URL
     ):
         self.session = session
         self._external_session = session
@@ -89,7 +93,8 @@ class AccessManager:
         self.api_key = api_key
         self.email = email
         self.password = password
-        self.api_url = api_url
+        self.data_sources_url = data_sources_url
+        self.source_collector_url = source_collector_url
 
     async def __aenter__(self):
         """
@@ -106,14 +111,22 @@ class AccessManager:
         if self._external_session is None and self.session is not None:
             await self.session.close()
 
-    def build_url(self, namespace: Namespaces, subdomains: Optional[list[str]] = None) -> str:
+    def build_url(
+            self,
+            namespace: DataSourcesNamespaces | SourceCollectorNamespaces,
+            subdomains: Optional[list[str]] = None,
+            base_url: Optional[str] = None
+    ) -> str:
         """
         Build url from namespace and subdomains
+        :param base_url:
         :param namespace:
         :param subdomains:
         :return:
         """
-        url = f"{self.api_url}/{namespace.value}"
+        if base_url is None:
+            base_url = self.data_sources_url
+        url = f"{base_url}/{namespace.value}"
         if subdomains is not None:
             url = f"{url}/{'/'.join(subdomains)}"
         return url
@@ -150,7 +163,7 @@ class AccessManager:
         :return:
         """
         url = self.build_url(
-            namespace=Namespaces.AUTH,
+            namespace=DataSourcesNamespaces.AUTH,
             subdomains=["api-key"]
         )
         request_info = RequestInfo(
@@ -167,7 +180,7 @@ class AccessManager:
         :return:
         """
         url = self.build_url(
-            namespace=Namespaces.AUTH,
+            namespace=DataSourcesNamespaces.AUTH,
             subdomains=["refresh-session"],
         )
         rqi = RequestInfo(
@@ -213,7 +226,7 @@ class AccessManager:
         :return:
         """
         url = self.build_url(
-            namespace=Namespaces.AUTH,
+            namespace=DataSourcesNamespaces.AUTH,
             subdomains=["login"]
         )
         request_info = RequestInfo(
