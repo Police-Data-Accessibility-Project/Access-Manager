@@ -1,1 +1,1 @@
-from AccessManager import AccessManager, RequestInfo, RequestType, Namespaces
+from access_manager import AccessManager, RequestInfo, RequestType, Namespaces

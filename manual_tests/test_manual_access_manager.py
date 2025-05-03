@@ -1,7 +1,7 @@
 from aiohttp import ClientSession
 from environs import Env
 
-from pdap_access_manager.AccessManager import AccessManager, RequestInfo, RequestType, Namespaces
+from pdap_access_manager.access_manager import AccessManager, RequestInfo, RequestType, Namespaces
 
 
 async def test_access_manager_refresh_access_token():
