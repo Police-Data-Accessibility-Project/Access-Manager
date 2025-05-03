@@ -71,7 +71,7 @@ def authorization_from_token(token: str) -> dict:
     }
 
 DEFAULT_DATA_SOURCES_URL = "https://data-sources.pdap.io/api"
-DEFAULT_SOURCE_COLLECTOR_URL = "https://source-collector.pdap.io/api"
+DEFAULT_SOURCE_COLLECTOR_URL = "https://source-collector.pdap.io"
 
 class AccessManager:
     """
