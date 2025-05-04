@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from enum import Enum
 from http import HTTPStatus
 from typing import Optional
@@ -97,6 +98,21 @@ class AccessManager:
         self.password = password
         self.data_sources_url = data_sources_url
         self.source_collector_url = source_collector_url
+
+    @asynccontextmanager
+    async def with_session(self):
+        """Allows just the session lifecycle to be managed."""
+        created_session = False
+        if self.session is None:
+            self.session = ClientSession()
+            created_session = True
+
+        try:
+            yield self
+        finally:
+            if created_session:
+                await self.session.close()
+                self.session = None
 
     async def __aenter__(self):
         """
