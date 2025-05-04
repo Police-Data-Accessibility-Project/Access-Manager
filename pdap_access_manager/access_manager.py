@@ -32,10 +32,6 @@ class SourceCollectorNamespaces(Enum):
     SEARCH = "search"
     ANNOTATE = "annotate"
 
-
-class CustomHTTPException(Exception):
-    pass
-
 class ResponseInfo(BaseModel):
     status_code: HTTPStatus
     data: Optional[dict]
@@ -100,7 +96,7 @@ class AccessManager:
         self.source_collector_url = source_collector_url
 
     @asynccontextmanager
-    async def with_session(self):
+    async def with_session(self) -> "AccessManager":
         """Allows just the session lifecycle to be managed."""
         created_session = False
         if self.session is None:
@@ -233,7 +229,8 @@ class AccessManager:
                 ri.headers = await self.jwt_header()
                 return await self.make_request(ri, allow_retry=False)
             else:
-                raise CustomHTTPException(f"Error making {ri.type_} request to {ri.url}: {str(e)}")
+                e.message = f"Error making {ri.type_} request to {ri.url}: {e.message}"
+                raise e
 
 
     async def login(self, email: str, password: str):

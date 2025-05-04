@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from aiohttp import ClientSession, ClientResponseError
 
-from pdap_access_manager.access_manager import AccessManager, RequestInfo, RequestType, CustomHTTPException
+from pdap_access_manager.access_manager import AccessManager, RequestInfo, RequestType
 
 
 @pytest.fixture
@@ -103,7 +103,7 @@ async def test_access_manager_refresh_access_token_failure_no_retry(access_manag
     mock_session_post.return_value.__aenter__.return_value = post_response
     access_manager.session.post = mock_session_post
 
-    with pytest.raises(CustomHTTPException):
+    with pytest.raises(ClientResponseError):
         await access_manager.refresh_access_token()
 
     post_response.raise_for_status.assert_called_once()
