@@ -26,6 +26,7 @@ class DataSourcesNamespaces(Enum):
     LOCATIONS = "locations"
     PERMISSIONS = "permissions"
     SEARCH = "search"
+    DATA_SOURCES = "data-sources"
 
 class SourceCollectorNamespaces(Enum):
     COLLECTORS = "collector"
