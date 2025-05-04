@@ -142,8 +142,9 @@ class AccessManager:
         if base_url is None:
             base_url = self.data_sources_url
         url = f"{base_url}/{namespace.value}"
-        if subdomains is not None:
-            url = f"{url}/{'/'.join(subdomains)}"
+        if subdomains is None or len(subdomains) == 0:
+            return url
+        url = f"{url}/{'/'.join(subdomains)}"
         return url
 
     @property
