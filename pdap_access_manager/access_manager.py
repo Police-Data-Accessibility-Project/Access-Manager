@@ -28,6 +28,8 @@ class DataSourcesNamespaces(Enum):
 
 class SourceCollectorNamespaces(Enum):
     COLLECTORS = "collector"
+    SEARCH = "search"
+    ANNOTATE = "annotate"
 
 
 class CustomHTTPException(Exception):
