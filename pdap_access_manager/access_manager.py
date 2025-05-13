@@ -28,6 +28,7 @@ class DataSourcesNamespaces(Enum):
     SEARCH = "search"
     DATA_SOURCES = "data-sources"
     MATCH = "match"
+    CHECK = "check"
 
 class SourceCollectorNamespaces(Enum):
     COLLECTORS = "collector"
