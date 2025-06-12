@@ -207,10 +207,14 @@ class AccessManager:
             url=url,
             headers=await self.refresh_jwt_header()
         )
-        rsi = await self.make_request(rqi, allow_retry=False)
-        data = rsi.data
-        self._access_token = data['access_token']
-        self._refresh_token = data['refresh_token']
+        try:
+            rsi = await self.make_request(rqi, allow_retry=False)
+            data = rsi.data
+            self._access_token = data['access_token']
+            self._refresh_token = data['refresh_token']
+        except ClientResponseError as e:
+            if e.status == HTTPStatus.UNAUTHORIZED:  # Token expired, retry logging in
+                await self.login(self.email, self.password)
 
     async def make_request(self, ri: RequestInfo, allow_retry: bool = True) -> ResponseInfo:
         """
@@ -233,9 +237,8 @@ class AccessManager:
                 await self.refresh_access_token()
                 ri.headers = await self.jwt_header()
                 return await self.make_request(ri, allow_retry=False)
-            else:
-                e.message = f"Error making {ri.type_} request to {ri.url}: {e.message}"
-                raise e
+            e.message = f"Error making {ri.type_} request to {ri.url}: {e.message}"
+            raise e
 
 
     async def login(self, email: str, password: str):

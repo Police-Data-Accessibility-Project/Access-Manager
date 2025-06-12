@@ -83,27 +83,35 @@ async def test_access_manager_refresh_on_401(access_manager):
     assert result.data == {"retried": True}
     access_manager.refresh_access_token.assert_called_once()
 
-async def test_access_manager_refresh_access_token_failure_no_retry(access_manager):
+async def test_access_manager_refresh_access_token_failure_no_retry(
+    access_manager
+):
     """
     If the request made by refresh_access_token fails,
-    it should not be retried
+    it should not be retried,
+    and a new login should be performed
     :return:
     """
+
     access_manager.jwt_header = AsyncMock(return_value={"Authorization": "Bearer token"})
+
+    access_manager.login = AsyncMock(name="mock_login")
     post_response = MagicMock(name="post_response")
     post_response.status = 200
     post_response.raise_for_status.side_effect = ClientResponseError(
         request_info=MagicMock(),
         history=None,
-        status=500,
-        message="Interal Server Error"
+        status=HTTPStatus.UNAUTHORIZED.value,
+        message="Internal Server Error"
     )
 
     mock_session_post = MagicMock(name="mock_session_post")
     mock_session_post.return_value.__aenter__.return_value = post_response
     access_manager.session.post = mock_session_post
 
-    with pytest.raises(ClientResponseError):
-        await access_manager.refresh_access_token()
+    await access_manager.refresh_access_token()
 
     post_response.raise_for_status.assert_called_once()
+
+    # Check that login called Twice
+    assert access_manager.login.call_count == 2
