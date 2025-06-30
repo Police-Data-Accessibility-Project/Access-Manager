@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock
 import pytest
 from aiohttp import ClientSession
 
-from access_manager import AccessManager
+from pdap_access_manager.access_manager import AccessManager
 
 
 @pytest.fixture

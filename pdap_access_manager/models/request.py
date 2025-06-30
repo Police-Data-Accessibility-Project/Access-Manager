@@ -3,7 +3,7 @@ from typing import Optional
 from boltons import urlutils
 from pydantic import BaseModel
 
-from enums import RequestType
+from pdap_access_manager.enums import RequestType
 
 
 class RequestInfo(BaseModel):

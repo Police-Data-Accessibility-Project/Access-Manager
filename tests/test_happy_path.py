@@ -1,8 +1,8 @@
 from http import HTTPStatus
 from unittest.mock import AsyncMock
 
-from enums import RequestType
-from models.request import RequestInfo
+from pdap_access_manager.enums import RequestType
+from pdap_access_manager.models import RequestInfo
 
 
 async def test_access_manager_happy_path(access_manager):

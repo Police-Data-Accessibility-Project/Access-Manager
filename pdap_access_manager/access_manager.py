@@ -4,10 +4,10 @@ from typing import Optional, Any, AsyncGenerator
 
 from aiohttp import ClientSession, ClientResponseError
 
-from pdap_access_manager.src.constants import DEFAULT_DATA_SOURCES_URL, DEFAULT_SOURCE_COLLECTOR_URL
-from pdap_access_manager.src.enums import RequestType, DataSourcesNamespaces, SourceCollectorNamespaces
-from pdap_access_manager.src.models.request import RequestInfo
-from pdap_access_manager.src.models.response import ResponseInfo
+from pdap_access_manager.constants import DEFAULT_DATA_SOURCES_URL, DEFAULT_SOURCE_COLLECTOR_URL
+from pdap_access_manager.enums import RequestType, DataSourcesNamespaces, SourceCollectorNamespaces
+from pdap_access_manager.models.request import RequestInfo
+from pdap_access_manager.models.response import ResponseInfo
 
 request_methods = {
     RequestType.POST: ClientSession.post,
