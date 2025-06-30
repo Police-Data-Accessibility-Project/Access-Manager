@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 from http import HTTPStatus
 from typing import Optional, Any, AsyncGenerator
@@ -39,13 +40,14 @@ class AccessManager:
             data_sources_url: str = DEFAULT_DATA_SOURCES_URL,
             source_collector_url: str = DEFAULT_SOURCE_COLLECTOR_URL
     ):
-        self.session = session
+        self._session = session
         self._external_session = session
         self._tokens = tokens
         self._auth = auth
         self.api_key = api_key
         self.data_sources_url = data_sources_url
         self.source_collector_url = source_collector_url
+        self.logger = logging.getLogger(__name__)
 
     @property
     def auth(self) -> AuthInfo:
@@ -59,35 +61,51 @@ class AccessManager:
             raise TokensNotSetError
         return self._tokens
 
+    @property
+    def session(self) -> ClientSession:
+        if self._external_session is not None:
+            return self._external_session
+        if self._session is not None:
+            return self._session
+        self.logger.warning(
+            "No ClientSession set, creating a new ClientSession. "
+            "Please use the `with_session` context manager if possible or otherwise "
+            "pass in a ClientSession to the constructor."
+        )
+        self._session = ClientSession()
+        return self._session
+
+
+
     @asynccontextmanager
     async def with_session(self) -> AsyncGenerator["AccessManager", Any]:
         """Allows just the session lifecycle to be managed."""
         created_session = False
-        if self.session is None:
-            self.session = ClientSession()
+        if self._session is None:
+            self._session = ClientSession()
             created_session = True
 
         try:
             yield self
         finally:
             if created_session:
-                await self.session.close()
-                self.session = None
+                await self._session.close()
+                self._session = None
 
     async def __aenter__(self):
         """
         Create session if not already set
         """
-        if self.session is None:
-            self.session = ClientSession()
+        if self._session is None:
+            self._session = ClientSession()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """
         Close session
         """
-        if self._external_session is None and self.session is not None:
-            await self.session.close()
+        if self._external_session is None and self._session is not None:
+            await self._session.close()
 
     def build_url(
             self,

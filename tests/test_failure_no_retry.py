@@ -36,7 +36,7 @@ async def test_access_manager_refresh_access_token_failure_no_retry(
 
     mock_session_post = MagicMock(name="mock_session_post")
     mock_session_post.return_value.__aenter__.return_value = post_response
-    access_manager.session.post = mock_session_post
+    access_manager._session.post = mock_session_post
 
     await access_manager.refresh_access_token()
 

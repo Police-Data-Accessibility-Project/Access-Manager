@@ -17,7 +17,7 @@ async def test_access_manager_happy_path(access_manager):
 
     mock_cm = AsyncMock()
     mock_cm.__aenter__.return_value = mock_response
-    access_manager.session.post.return_value = mock_cm
+    access_manager._session.post.return_value = mock_cm
 
     ri = RequestInfo(
         type_=RequestType.POST,

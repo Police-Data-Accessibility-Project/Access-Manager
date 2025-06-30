@@ -30,7 +30,7 @@ async def test_access_manager_refresh_on_401(access_manager):
         first_get_response,
         second_get_response
     ]
-    access_manager.session.get = mock_session_get
+    access_manager._session.get = mock_session_get
 
     ri = RequestInfo(
         type_=RequestType.GET,
