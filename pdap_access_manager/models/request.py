@@ -7,6 +7,19 @@ from pdap_access_manager.enums import RequestType
 
 
 class RequestInfo(BaseModel):
+    """Information about a given request
+
+    Attributes:
+        type_: RequestType: The type of HTTP request
+        url: str: The url to send the request to
+        json_: Optional[dict] = None: Any json data to include in the request
+        headers: Optional[dict] = None: Any headers to include in the request
+        params: Optional[dict] = None: Any query parameters to include in the request
+        timeout: Optional[int] = 10: The timeout for the request
+
+    """
+
+
     type_: RequestType
     url: str
     json_: Optional[dict] = None

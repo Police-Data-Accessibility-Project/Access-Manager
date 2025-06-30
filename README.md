@@ -11,7 +11,21 @@ Utilizes an `aiohttp` client session, which can either be passed into the constr
 
 ```python
 from pdap_access_manager import AccessManager
+from pdap_access_manager.models.request import RequestInfo
+from pdap_access_manager.enums import DataSourcesNamespaces, RequestType
 
-async with AccessManager("email", "password") as am:
-    await am.make_request(RequestInfo(...))
+async def main():
+    async with AccessManager("email", "password") as am:
+        url = am.build_url(
+            namespace=DataSourcesNamespaces.SEARCH,
+            subdomains=['follow'],  
+        )
+        await am.make_request(
+            RequestInfo(
+                url=url,
+                type_=RequestType.GET,
+                headers=am.jwt_header()
+            )
+        )
+
 ```
