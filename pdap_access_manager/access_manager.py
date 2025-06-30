@@ -160,9 +160,9 @@ class AccessManager:
     async def make_request(self, ri: RequestInfo, allow_retry: bool = True) -> ResponseInfo:
         """
         Make request to PDAP
-        :param allow_retry:
-        :param ri:
-        :return:
+
+        Raises:
+            ClientResponseError: If request fails
         """
         try:
             method = getattr(self.session, ri.type_.value.lower())
@@ -186,7 +186,9 @@ class AccessManager:
     async def login(self) -> None:
         """
         Login to PDAP and retrieve access and refresh tokens
-        :return:
+
+        Raises:
+            ClientResponseError: If login fails
         """
         url = self.build_url(
             namespace=DataSourcesNamespaces.AUTH,
