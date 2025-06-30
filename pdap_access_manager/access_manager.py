@@ -1,18 +1,11 @@
 from contextlib import asynccontextmanager
-from enum import Enum
 from http import HTTPStatus
 from typing import Optional
-from boltons import urlutils
 
 from aiohttp import ClientSession, ClientResponseError
-from pydantic import BaseModel
 
-
-class RequestType(Enum):
-    POST = "POST"
-    PUT = "PUT"
-    GET = "GET"
-    DELETE = "DELETE"
+from pdap_access_manager import RequestType, DataSourcesNamespaces, SourceCollectorNamespaces, ResponseInfo, RequestInfo
+from pdap_access_manager.constants import DEFAULT_DATA_SOURCES_URL, DEFAULT_SOURCE_COLLECTOR_URL
 
 request_methods = {
     RequestType.POST: ClientSession.post,
@@ -21,60 +14,12 @@ request_methods = {
     RequestType.DELETE: ClientSession.delete,
 }
 
-class DataSourcesNamespaces(Enum):
-    AUTH = "auth"
-    LOCATIONS = "locations"
-    PERMISSIONS = "permissions"
-    SEARCH = "search"
-    DATA_SOURCES = "data-sources"
-    SOURCE_COLLECTOR = 'source-collector'
-    MATCH = "match"
-    CHECK = "check"
-
-class SourceCollectorNamespaces(Enum):
-    COLLECTORS = "collector"
-    SEARCH = "search"
-    ANNOTATE = "annotate"
-
-class ResponseInfo(BaseModel):
-    status_code: HTTPStatus
-    data: Optional[dict]
-
-
-class RequestInfo(BaseModel):
-    type_: RequestType
-    url: str
-    json_: Optional[dict] = None
-    headers: Optional[dict] = None
-    params: Optional[dict] = None
-    timeout: Optional[int] = 10
-
-    def kwargs(self) -> dict:
-        d = {
-            "url": self.url_with_query_params(),
-        }
-        if self.json_ is not None:
-            d['json'] = self.json_
-        if self.headers is not None:
-            d['headers'] = self.headers
-        if self.timeout is not None:
-            d['timeout'] = self.timeout
-        return d
-
-    def url_with_query_params(self) -> str:
-        if self.params is None:
-            return self.url
-        url = urlutils.URL(self.url)
-        url.query_params.update(self.params)
-        return url.to_text()
 
 def authorization_from_token(token: str) -> dict:
     return {
         "Authorization": f"Bearer {token}"
     }
 
-DEFAULT_DATA_SOURCES_URL = "https://data-sources.pdap.io/api"
-DEFAULT_SOURCE_COLLECTOR_URL = "https://source-collector.pdap.io"
 
 class AccessManager:
     """
@@ -219,6 +164,7 @@ class AccessManager:
     async def make_request(self, ri: RequestInfo, allow_retry: bool = True) -> ResponseInfo:
         """
         Make request to PDAP
+        :param allow_retry:
         :param ri:
         :return:
         """
@@ -269,7 +215,7 @@ class AccessManager:
     async def jwt_header(self) -> dict:
         """
         Retrieve JWT header
-        Returns: Dictionary of Bearer Authorization with JWT key
+        :returns: Dictionary of Bearer Authorization with JWT key
         """
         access_token = await self.access_token
         return authorization_from_token(access_token)
@@ -277,6 +223,7 @@ class AccessManager:
     async def refresh_jwt_header(self) -> dict:
         """
         Retrieve JWT header
+
         Returns: Dictionary of Bearer Authorization with JWT key
         """
         refresh_token = await self.refresh_token

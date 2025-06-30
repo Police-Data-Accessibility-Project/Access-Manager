@@ -4,7 +4,8 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from aiohttp import ClientSession, ClientResponseError
 
-from pdap_access_manager.access_manager import AccessManager, RequestInfo, RequestType
+from pdap_access_manager.access_manager import AccessManager
+from pdap_access_manager import RequestType, RequestInfo
 
 
 @pytest.fixture
