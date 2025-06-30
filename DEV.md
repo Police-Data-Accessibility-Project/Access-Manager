@@ -1,3 +1,10 @@
+
+To bump the version, add a tag, and push, run 
+```bash
+python bump_version.py patch --tag --push
+```
+If bumping a minor or major version, replace `patch` with `minor` or `major`
+
 To bump the version by a patch, run:
 ```bash
 poetry version patch

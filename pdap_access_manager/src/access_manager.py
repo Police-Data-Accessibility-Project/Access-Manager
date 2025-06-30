@@ -1,11 +1,13 @@
 from contextlib import asynccontextmanager
 from http import HTTPStatus
-from typing import Optional
+from typing import Optional, Any, AsyncGenerator
 
 from aiohttp import ClientSession, ClientResponseError
 
-from pdap_access_manager import RequestType, DataSourcesNamespaces, SourceCollectorNamespaces, ResponseInfo, RequestInfo
-from pdap_access_manager.constants import DEFAULT_DATA_SOURCES_URL, DEFAULT_SOURCE_COLLECTOR_URL
+from pdap_access_manager.src.constants import DEFAULT_DATA_SOURCES_URL, DEFAULT_SOURCE_COLLECTOR_URL
+from pdap_access_manager.src.enums import RequestType, DataSourcesNamespaces, SourceCollectorNamespaces
+from pdap_access_manager.src.models.request import RequestInfo
+from pdap_access_manager.src.models.response import ResponseInfo
 
 request_methods = {
     RequestType.POST: ClientSession.post,
@@ -45,7 +47,7 @@ class AccessManager:
         self.source_collector_url = source_collector_url
 
     @asynccontextmanager
-    async def with_session(self) -> "AccessManager":
+    async def with_session(self) -> AsyncGenerator["AccessManager", Any]:
         """Allows just the session lifecycle to be managed."""
         created_session = False
         if self.session is None:
@@ -102,10 +104,7 @@ class AccessManager:
         :return:
         """
         if self._access_token is None:
-            await self.login(
-                email=self.email,
-                password=self.password
-            )
+            await self.login()
         return self._access_token
 
     @property
@@ -115,10 +114,7 @@ class AccessManager:
         :return:
         """
         if self._refresh_token is None:
-            await self.login(
-                email=self.email,
-                password=self.password
-            )
+            await self.login()
         return self._refresh_token
 
     async def load_api_key(self):
@@ -159,7 +155,7 @@ class AccessManager:
             self._refresh_token = data['refresh_token']
         except ClientResponseError as e:
             if e.status == HTTPStatus.UNAUTHORIZED:  # Token expired, retry logging in
-                await self.login(self.email, self.password)
+                await self.login()
 
     async def make_request(self, ri: RequestInfo, allow_retry: bool = True) -> ResponseInfo:
         """
@@ -187,11 +183,9 @@ class AccessManager:
             raise e
 
 
-    async def login(self, email: str, password: str):
+    async def login(self) -> None:
         """
         Login to PDAP and retrieve access and refresh tokens
-        :param email:
-        :param password:
         :return:
         """
         url = self.build_url(
@@ -202,8 +196,8 @@ class AccessManager:
             type_=RequestType.POST,
             url=url,
             json_={
-                "email": email,
-                "password": password
+                "email": self.email,
+                "password": self.password
             }
         )
         response_info = await self.make_request(request_info)
