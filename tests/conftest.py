@@ -4,6 +4,7 @@ import pytest
 from aiohttp import ClientSession
 
 from pdap_access_manager.access_manager import AccessManager
+from pdap_access_manager.models.auth import AuthInfo
 
 
 @pytest.fixture
@@ -13,8 +14,10 @@ def access_manager():
         spec=ClientSession
     )
     access_manager = AccessManager(
-        email="email",
-        password="password",
+        auth=AuthInfo(
+            email="email",
+            password="password"
+        ),
         session=mock_session,
     )
     return access_manager

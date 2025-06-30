@@ -6,8 +6,11 @@ from aiohttp import ClientSession, ClientResponseError
 
 from pdap_access_manager.constants import DEFAULT_DATA_SOURCES_URL, DEFAULT_SOURCE_COLLECTOR_URL
 from pdap_access_manager.enums import RequestType, DataSourcesNamespaces, SourceCollectorNamespaces
+from pdap_access_manager.exceptions import TokensNotSetError, AuthNotSetError
+from pdap_access_manager.models.auth import AuthInfo
 from pdap_access_manager.models.request import RequestInfo
 from pdap_access_manager.models.response import ResponseInfo
+from pdap_access_manager.models.tokens import TokensInfo
 
 request_methods = {
     RequestType.POST: ClientSession.post,
@@ -29,8 +32,8 @@ class AccessManager:
     """
     def __init__(
             self,
-            email: str,
-            password: str,
+            auth: Optional[AuthInfo] = None,
+            tokens: Optional[TokensInfo] = None,
             session: Optional[ClientSession] = None,
             api_key: Optional[str] = None,
             data_sources_url: str = DEFAULT_DATA_SOURCES_URL,
@@ -38,13 +41,23 @@ class AccessManager:
     ):
         self.session = session
         self._external_session = session
-        self._access_token = None
-        self._refresh_token = None
+        self._tokens = tokens
+        self._auth = auth
         self.api_key = api_key
-        self.email = email
-        self.password = password
         self.data_sources_url = data_sources_url
         self.source_collector_url = source_collector_url
+
+    @property
+    def auth(self) -> AuthInfo:
+        if self._auth is None:
+            raise AuthNotSetError
+        return self._auth
+
+    @property
+    def tokens(self) -> TokensInfo:
+        if self._tokens is None:
+            raise TokensNotSetError
+        return self._tokens
 
     @asynccontextmanager
     async def with_session(self) -> AsyncGenerator["AccessManager", Any]:
@@ -103,9 +116,11 @@ class AccessManager:
         Retrieve access token if not already set
         :return:
         """
-        if self._access_token is None:
-            await self.login()
-        return self._access_token
+        try:
+            return self.tokens.access_token
+        except TokensNotSetError:
+            self._tokens = await self.login()
+            return self.tokens.access_token
 
     @property
     async def refresh_token(self) -> str:
@@ -113,9 +128,12 @@ class AccessManager:
         Retrieve refresh token if not already set
         :return:
         """
-        if self._refresh_token is None:
-            await self.login()
-        return self._refresh_token
+        try:
+            return self.tokens.refresh_token
+        except TokensNotSetError:
+            self._tokens = await self.login()
+            return self.tokens.refresh_token
+
 
     async def load_api_key(self):
         """
@@ -151,11 +169,13 @@ class AccessManager:
         try:
             rsi = await self.make_request(rqi, allow_retry=False)
             data = rsi.data
-            self._access_token = data['access_token']
-            self._refresh_token = data['refresh_token']
+            self._tokens = TokensInfo(
+                access_token=data['access_token'],
+                refresh_token=data['refresh_token']
+            )
         except ClientResponseError as e:
             if e.status == HTTPStatus.UNAUTHORIZED:  # Token expired, retry logging in
-                await self.login()
+                self._tokens = await self.login()
 
     async def make_request(self, ri: RequestInfo, allow_retry: bool = True) -> ResponseInfo:
         """
@@ -183,7 +203,7 @@ class AccessManager:
             raise e
 
 
-    async def login(self) -> None:
+    async def login(self) -> TokensInfo:
         """
         Login to PDAP and retrieve access and refresh tokens
 
@@ -194,18 +214,22 @@ class AccessManager:
             namespace=DataSourcesNamespaces.AUTH,
             subdomains=["login"]
         )
+        auth = self.auth
         request_info = RequestInfo(
             type_=RequestType.POST,
             url=url,
             json_={
-                "email": self.email,
-                "password": self.password
+                "email": auth.email,
+                "password": auth.password
             }
         )
         response_info = await self.make_request(request_info)
         data = response_info.data
-        self._access_token = data["access_token"]
-        self._refresh_token = data["refresh_token"]
+        return TokensInfo(
+            access_token=data["access_token"],
+            refresh_token=data["refresh_token"]
+        )
+
 
 
     async def jwt_header(self) -> dict:

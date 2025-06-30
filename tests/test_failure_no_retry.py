@@ -3,6 +3,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 from aiohttp import ClientResponseError
 
+from pdap_access_manager.models.tokens import TokensInfo
+
 
 async def test_access_manager_refresh_access_token_failure_no_retry(
     access_manager
@@ -16,7 +18,13 @@ async def test_access_manager_refresh_access_token_failure_no_retry(
 
     access_manager.jwt_header = AsyncMock(return_value={"Authorization": "Bearer token"})
 
-    access_manager.login = AsyncMock(name="mock_login")
+    access_manager.login = AsyncMock(
+        name="mock_login",
+        return_value=TokensInfo(
+            access_token="access_token",
+            refresh_token="refresh_token"
+        )
+    )
     post_response = MagicMock(name="post_response")
     post_response.status = 200
     post_response.raise_for_status.side_effect = ClientResponseError(
