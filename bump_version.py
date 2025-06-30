@@ -15,9 +15,19 @@ def run_command(command, check=True):
 
 def main():
     parser = argparse.ArgumentParser(description="Bump project version with Poetry and Git.")
-    parser.add_argument("bump", choices=["patch", "minor", "major"], help="Which part to bump.")
-    parser.add_argument("--tag", action="store_true", help="Also create a Git tag.")
-    parser.add_argument("--push", action="store_true", help="Also push commits and tags.")
+    parser.add_argument(
+        "bump",
+        choices=["patch", "minor", "major"],
+        help="Which part to bump.")
+    parser.add_argument(
+        "--tag",
+        action="store_true",
+        help="Also create a Git tag.")
+    parser.add_argument(
+        "--push",
+        action="store_true",
+        help="Also push commits and tags."
+    )
 
     args = parser.parse_args()
 
