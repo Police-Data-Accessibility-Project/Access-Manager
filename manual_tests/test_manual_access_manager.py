@@ -1,7 +1,7 @@
 from aiohttp import ClientSession
 from environs import Env
 
-from pdap_access_manager.access_manager import AccessManager
+from pdap_access_manager. import AccessManager
 from pdap_access_manager import RequestType, DataSourcesNamespaces, RequestInfo
 
 

@@ -11,12 +11,13 @@ async def test_access_manager_refresh_access_token_failure_no_retry(
 ):
     """
     If the request made by refresh_access_token fails,
-    it should not be retried,
-    and a new login should be performed
+    it should not be retried, and a new login should be performed
     :return:
     """
 
-    access_manager.jwt_header = AsyncMock(return_value={"Authorization": "Bearer token"})
+    access_manager.jwt_header = AsyncMock(
+        return_value={"Authorization": "Bearer token"}
+    )
 
     access_manager.login = AsyncMock(
         name="mock_login",

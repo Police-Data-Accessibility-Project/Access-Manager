@@ -1,88 +1,40 @@
-import logging
 from contextlib import asynccontextmanager
 from http import HTTPStatus
-from typing import Optional, Any, AsyncGenerator
+from typing import Any, AsyncGenerator, override
 
 from aiohttp import ClientSession, ClientResponseError
 
-from pdap_access_manager.constants import DEFAULT_DATA_SOURCES_URL, DEFAULT_SOURCE_COLLECTOR_URL
-from pdap_access_manager.enums import RequestType, DataSourcesNamespaces, SourceCollectorNamespaces
-from pdap_access_manager.exceptions import TokensNotSetError, AuthNotSetError
-from pdap_access_manager.models.auth import AuthInfo
+from pdap_access_manager.access_manager._base import AccessManagerBase
+from pdap_access_manager.enums import RequestType
+from pdap_access_manager.exceptions import TokensNotSetError, RequestError
+from pdap_access_manager.helpers import authorization_from_token
 from pdap_access_manager.models.request import RequestInfo
 from pdap_access_manager.models.response import ResponseInfo
 from pdap_access_manager.models.tokens import TokensInfo
 
-request_methods = {
-    RequestType.POST: ClientSession.post,
-    RequestType.PUT: ClientSession.put,
-    RequestType.GET: ClientSession.get,
-    RequestType.DELETE: ClientSession.delete,
-}
 
-
-def authorization_from_token(token: str) -> dict:
-    return {
-        "Authorization": f"Bearer {token}"
-    }
-
-
-class AccessManager:
+class AccessManagerAsync(AccessManagerBase):
     """
     Manages login, api key, access and refresh tokens
     """
-    def __init__(
-            self,
-            auth: Optional[AuthInfo] = None,
-            tokens: Optional[TokensInfo] = None,
-            session: Optional[ClientSession] = None,
-            api_key: Optional[str] = None,
-            data_sources_url: str = DEFAULT_DATA_SOURCES_URL,
-            source_collector_url: str = DEFAULT_SOURCE_COLLECTOR_URL
-    ):
-        self._session = session
-        self._external_session = session
-        self._tokens = tokens
-        self._auth = auth
-        self.api_key = api_key
-        self.data_sources_url = data_sources_url
-        self.source_collector_url = source_collector_url
-        self.logger = logging.getLogger(__name__)
+    @override
+    def _expected_session_type(
+        self
+    ) -> type[ClientSession]:
+        return ClientSession
 
-    @property
-    def auth(self) -> AuthInfo:
-        if self._auth is None:
-            raise AuthNotSetError
-        return self._auth
-
-    @property
-    def tokens(self) -> TokensInfo:
-        if self._tokens is None:
-            raise TokensNotSetError
-        return self._tokens
-
-    @property
-    def session(self) -> ClientSession:
-        if self._external_session is not None:
-            return self._external_session
-        if self._session is not None:
-            return self._session
-        self.logger.warning(
-            "No ClientSession set, creating a new ClientSession. "
-            "Please use the `with_session` context manager if possible or otherwise "
-            "pass in a ClientSession to the constructor."
-        )
-        self._session = ClientSession()
-        return self._session
-
-
+    @override
+    def _initialize_session(
+        self
+    ) -> ClientSession:
+        return ClientSession()
 
     @asynccontextmanager
-    async def with_session(self) -> AsyncGenerator["AccessManager", Any]:
+    async def with_session(self) -> AsyncGenerator["AccessManagerAsync", Any]:
         """Allows just the session lifecycle to be managed."""
         created_session = False
         if self._session is None:
-            self._session = ClientSession()
+            self._session = self._initialize_session()
             created_session = True
 
         try:
@@ -107,45 +59,18 @@ class AccessManager:
         if self._external_session is None and self._session is not None:
             await self._session.close()
 
-    def build_url(
-            self,
-            namespace: DataSourcesNamespaces | SourceCollectorNamespaces,
-            subdomains: Optional[list[str]] = None,
-            base_url: Optional[str] = None
-    ) -> str:
-        """
-        Build url from namespace and subdomains
-        :param base_url:
-        :param namespace:
-        :param subdomains:
-        :return:
-        """
-        if base_url is None:
-            base_url = self.data_sources_url
-        url = f"{base_url}/{namespace.value}"
-        if subdomains is None or len(subdomains) == 0:
-            return url
-        url = f"{url}/{'/'.join(subdomains)}"
-        return url
-
+    @override
     @property
     async def access_token(self) -> str:
-        """
-        Retrieve access token if not already set
-        :return:
-        """
         try:
             return self.tokens.access_token
         except TokensNotSetError:
             self._tokens = await self.login()
             return self.tokens.access_token
 
+    @override
     @property
     async def refresh_token(self) -> str:
-        """
-        Retrieve refresh token if not already set
-        :return:
-        """
         try:
             return self.tokens.refresh_token
         except TokensNotSetError:
@@ -153,15 +78,11 @@ class AccessManager:
             return self.tokens.refresh_token
 
 
-    async def load_api_key(self):
+    @override
+    async def load_api_key(self) -> None:
+        """Load API key from PDAP:
         """
-        Load API key from PDAP
-        :return:
-        """
-        url = self.build_url(
-            namespace=DataSourcesNamespaces.AUTH,
-            subdomains=["api-key"]
-        )
+        url = self._get_api_key_url()
         request_info = RequestInfo(
             type_ = RequestType.POST,
             url=url,
@@ -170,15 +91,13 @@ class AccessManager:
         response_info = await self.make_request(request_info)
         self.api_key = response_info.data["api_key"]
 
+    @override
     async def refresh_access_token(self):
         """
         Refresh access and refresh tokens from PDAP
         :return:
         """
-        url = self.build_url(
-            namespace=DataSourcesNamespaces.AUTH,
-            subdomains=["refresh-session"],
-        )
+        url = self._get_refresh_access_token_url()
         rqi = RequestInfo(
             type_=RequestType.POST,
             url=url,
@@ -191,10 +110,11 @@ class AccessManager:
                 access_token=data['access_token'],
                 refresh_token=data['refresh_token']
             )
-        except ClientResponseError as e:
-            if e.status == HTTPStatus.UNAUTHORIZED:  # Token expired, retry logging in
+        except RequestError as e:
+            if e.status_code == HTTPStatus.UNAUTHORIZED:  # Token expired, retry logging in
                 self._tokens = await self.login()
 
+    @override
     async def make_request(self, ri: RequestInfo, allow_retry: bool = True) -> ResponseInfo:
         """
         Make request to PDAP
@@ -203,7 +123,7 @@ class AccessManager:
             ClientResponseError: If request fails
         """
         try:
-            method = getattr(self.session, ri.type_.value.lower())
+            method = self.get_http_method(ri.type_)
             async with method(**ri.kwargs()) as response:
                 response.raise_for_status()
                 json = await response.json()
@@ -217,10 +137,13 @@ class AccessManager:
                 await self.refresh_access_token()
                 ri.headers = await self.jwt_header()
                 return await self.make_request(ri, allow_retry=False)
-            e.message = f"Error making {ri.type_} request to {ri.url}: {e.message}"
-            raise e
+            raise RequestError(
+                message=f"Error making {ri.type_} request to {ri.url}",
+                status_code=HTTPStatus(e.status)
+            ) from e
 
 
+    @override
     async def login(self) -> TokensInfo:
         """
         Login to PDAP and retrieve access and refresh tokens
@@ -228,19 +151,7 @@ class AccessManager:
         Raises:
             ClientResponseError: If login fails
         """
-        url = self.build_url(
-            namespace=DataSourcesNamespaces.AUTH,
-            subdomains=["login"]
-        )
-        auth = self.auth
-        request_info = RequestInfo(
-            type_=RequestType.POST,
-            url=url,
-            json_={
-                "email": auth.email,
-                "password": auth.password
-            }
-        )
+        request_info = self.build_login_request_info()
         response_info = await self.make_request(request_info)
         data = response_info.data
         return TokensInfo(
@@ -250,6 +161,7 @@ class AccessManager:
 
 
 
+    @override
     async def jwt_header(self) -> dict:
         """
         Retrieve JWT header
@@ -258,6 +170,7 @@ class AccessManager:
         access_token = await self.access_token
         return authorization_from_token(access_token)
 
+    @override
     async def refresh_jwt_header(self) -> dict:
         """
         Retrieve JWT header
@@ -267,6 +180,7 @@ class AccessManager:
         refresh_token = await self.refresh_token
         return authorization_from_token(refresh_token)
 
+    @override
     async def api_key_header(self) -> dict:
         """
         Retrieve API key header
