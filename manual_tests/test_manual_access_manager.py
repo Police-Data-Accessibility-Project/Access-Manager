@@ -1,8 +1,7 @@
 from aiohttp import ClientSession
 from environs import Env
 
-from pdap_access_manager. import AccessManager
-from pdap_access_manager import RequestType, DataSourcesNamespaces, RequestInfo
+from pdap_access_manager.access_manager.async_ import AccessManagerAsync
 
 
 async def test_access_manager_refresh_access_token():
@@ -10,7 +9,7 @@ async def test_access_manager_refresh_access_token():
     env.read_env()
 
     async with ClientSession() as session:
-        access_manager = AccessManager(
+        access_manager = AccessManagerAsync(
             email=env.str("PDAP_EMAIL"),
             password=env.str("PDAP_PASSWORD"),
             session=session,

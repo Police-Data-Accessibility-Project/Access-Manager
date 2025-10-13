@@ -15,7 +15,7 @@ Utilizes an `aiohttp` client session, which can either be passed into the constr
 from pdap_access_manager.access_manager.async_ import AccessManagerAsync
 from pdap_access_manager.models.request import RequestInfo
 from pdap_access_manager.models.auth import AuthInfo
-from pdap_access_manager.enums import DataSourcesNamespaces, RequestType
+from pdap_access_manager.enums import RequestType
 
 async def main():
     auth_info = AuthInfo(
@@ -23,10 +23,7 @@ async def main():
         password="password"
     )
     async with AccessManagerAsync(auth_info) as am:
-        url = am.build_url(
-            namespace=DataSourcesNamespaces.SEARCH,
-            subdomains=['follow'],  
-        )
+        url = f"{am.data_sources_url}/search/follow"
         await am.make_request(
             RequestInfo(
                 url=url,

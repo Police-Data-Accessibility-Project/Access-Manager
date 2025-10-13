@@ -1,17 +1,17 @@
 import logging
-from abc import ABC, abstractmethod, abstractproperty
+from abc import ABC, abstractmethod
 from typing import Optional
 
 from aiohttp import ClientSession
+from requests import Session
 
 from pdap_access_manager.constants import DEFAULT_DATA_SOURCES_URL, DEFAULT_SOURCE_COLLECTOR_URL
-from pdap_access_manager.enums import DataSourcesNamespaces, SourceCollectorNamespaces, RequestType
+from pdap_access_manager.enums import RequestType
 from pdap_access_manager.exceptions import AuthNotSetError, TokensNotSetError, IncorrectSessionError
 from pdap_access_manager.models.auth import AuthInfo
 from pdap_access_manager.models.request import RequestInfo
 from pdap_access_manager.models.response import ResponseInfo
 from pdap_access_manager.models.tokens import TokensInfo
-from requests import Session
 
 
 class AccessManagerBase(ABC):
@@ -87,27 +87,6 @@ class AccessManagerBase(ABC):
         self._session = self._initialize_session()
         return self._session
 
-    def build_url(
-            self,
-            namespace: DataSourcesNamespaces | SourceCollectorNamespaces,
-            subdomains: Optional[list[str]] = None,
-            base_url: Optional[str] = None
-    ) -> str:
-        """
-        Build url from namespace and subdomains
-        :param base_url:
-        :param namespace:
-        :param subdomains:
-        :return:
-        """
-        if base_url is None:
-            base_url = self.data_sources_url
-        url = f"{base_url}/{namespace.value}"
-        if subdomains is None or len(subdomains) == 0:
-            return url
-        url = f"{url}/{'/'.join(subdomains)}"
-        return url
-
     @property
     @abstractmethod
     def access_token(self) -> str:
@@ -151,24 +130,13 @@ class AccessManagerBase(ABC):
         raise NotImplementedError
 
     def _get_api_key_url(self) -> str:
-        return self.build_url(
-            namespace=DataSourcesNamespaces.AUTH,
-            subdomains=["api-key"]
-        )
+        return f"{self.data_sources_url}/v2/auth/api-key"
 
     def _get_refresh_access_token_url(self) -> str:
-        return self.build_url(
-            namespace=DataSourcesNamespaces.AUTH,
-            subdomains=["refresh-session"]
-        )
-
-
+        return f"{self.data_sources_url}/v2/auth/refresh-session"
 
     def build_login_request_info(self) -> RequestInfo:
-        url = self.build_url(
-            namespace=DataSourcesNamespaces.AUTH,
-            subdomains=["login"]
-        )
+        url: str = f"{self.data_sources_url}/v2/auth/login"
         auth = self.auth
         return RequestInfo(
             type_=RequestType.POST,
