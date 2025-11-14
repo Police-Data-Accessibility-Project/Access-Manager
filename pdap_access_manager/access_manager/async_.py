@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from http import HTTPStatus
-from typing import Any, AsyncGenerator, override
+from typing import Any, AsyncGenerator
+from typing_extensions import override
 
 from aiohttp import ClientSession, ClientResponseError
 

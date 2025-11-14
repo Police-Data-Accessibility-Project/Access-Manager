@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 from http import HTTPStatus
-from typing import Generator, Any, override
+from typing import Generator, Any
+from typing_extensions import override
 
 from requests import Session, HTTPError
 
