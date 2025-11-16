@@ -139,7 +139,7 @@ class AccessManagerAsync(AccessManagerBase):
                 ri.headers = await self.jwt_header()
                 return await self.make_request(ri, allow_retry=False)
             raise RequestError(
-                message=f"Error making {ri.type_} request to {ri.url}",
+                message=f"Error making {ri.type_} request to {ri.url}: {e.message}",
                 status_code=HTTPStatus(e.status)
             ) from e
 
